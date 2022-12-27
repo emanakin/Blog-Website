@@ -1,16 +1,17 @@
 //jshint esversion:6
 
 // GLOBAL VARIABLES
-posts = [];
+
 
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const lodash = require("lodash");
+const mongoose = require("mongoose"); //require mongoose to be able to interact with the database
 
-const homeStartingContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
-const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
-const contactContent = "Scelerisque eleifend donec pretium vulputate sapien. Rhoncus urna neque viverra justo nec ultrices. Arcu dui vivamus arcu felis bibendum. Consectetur adipiscing elit duis tristique. Risus viverra adipiscing at in tellus integer feugiat. Sapien nec sagittis aliquam malesuada bibendum arcu vitae. Consequat interdum varius sit amet mattis. Iaculis nunc sed augue lacus. Interdum posuere lorem ipsum dolor sit amet consectetur adipiscing elit. Pulvinar elementum integer enim neque. Ultrices gravida dictum fusce ut placerat orci nulla. Mauris in aliquam sem fringilla ut morbi tincidunt. Tortor posuere ac ut consequat semper viverra nam libero.";
+const homeStartingContent = "Welcome to our day journaling website! Do you often find yourself missing deadlines and forgetting things? Our website is here to help you keep track of your daily activities and stay organized. Simply visit the '/compose' directory to write a journal entry about your day. With our website, you can easily remember important parts of your day and stay on top of your responsibilities. Whether you're a busy student, a professional with a hectic schedule, or anyone who wants to stay organized, our day journaling website is perfect for you. Give it a try and see how it can help you stay on track!";
+const aboutContent = "My name is Emmanuel, and I am a third-year computer science student at Wilfrid Laurier University. This website was developed as a project to showcase my skills in web development. It was built using HTML for the layout, CSS for styling, and JavaScript for functionality. EJS was used for page templating, and the backend was built using the Node.js framework Express.js. The database is powered by MongoDB, and I used Mongoose to interact with it. If you're someone who values organization and wants a simple and effective way to keep track of your daily activities, this website is for you. Give it a try and see how it can help you stay on top of your responsibilities and never forget an important deadline again!";
+const contactContent = "To contact me, please email me at emmanuelakinlosotu12@gmail.com. I am always happy to hear from users and welcome feedback or suggestions. I will do my best to respond promptly. Thank you for using our website.";
 
 const app = express();
 
@@ -19,25 +20,48 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
+//create database named blodDB
+mongoose.connect("mongodb://localhost:27017/blogDB", {useNewUrlParser: true});
+
+//JSON format
+const blogSchema = {
+  title: String,
+  body: String
+};
+
+//create a collection in the database using blog schema named Blogs's
+const Blog = mongoose.model("Blog", blogSchema);
+
+
+
+
 //home route function handler
 app.get("/", function(req, res){
-  res.render("home", {homeStartingContent: homeStartingContent, posts: posts});
+  posts = [];
+  Blog.find({}, function(err, foundItems){
+    res.render("home", {homeStartingContent: homeStartingContent, posts: foundItems});
+  });
+
+  
 });
 
 
 
 app.get("/posts/:blogPostTitle", function(req, res){
   let blogPostObj = {}
-
-  for (let i = 0; i < posts.length; i++){
-    if (lodash.lowerCase(posts[i].title) === lodash.lowerCase(req.params.blogPostTitle)){
-      blogPostObj = posts[i];
-    } else {
-      console.log("No match found");
+  Blog.find({}, function(err, foundItems){
+    for (let i = 0; i < foundItems.length; i++){
+      console.log(lodash.lowerCase(foundItems[i].title));
+      console.log(lodash.lowerCase(req.params.blogPostTitle));
+      if (lodash.lowerCase(foundItems[i].title) === lodash.lowerCase(req.params.blogPostTitle)){
+        blogPostObj = foundItems[i];
+      } else {
+        console.log("No match found");
+      }
     }
-  }
+    res.render("post", {title: blogPostObj.title, body: blogPostObj.body})
+  });
   
-  res.render("post", {title: blogPostObj.title, body: blogPostObj.content})
 });
 
 app.get("/about", function(req, res){
@@ -53,12 +77,15 @@ app.get("/compose", function(req, res){
 });
 
 app.post("/compose", function(req, res){
+  const title = req.body.title;
+  const body = req.body.postBody;
+  
+  const post = new Blog({
+    title: title,
+    body: body
+  });
 
-  let post = {
-    title: req.body.title,
-    content: req.body.postBody
-  };
-
+  post.save();
   posts.push(post);
   res.redirect("/");
 });
