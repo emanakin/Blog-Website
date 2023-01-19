@@ -21,7 +21,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
 //create database named blodDB
-mongoose.connect("mongodb://localhost:27017/blogDB", {useNewUrlParser: true});
+mongoose.connect("mongodb+srv://admin-emmanuel:Akin9653@blog-entries.ry74q5f.mongodb.net/blogDB", {useNewUrlParser: true});
 
 //JSON format
 const blogSchema = {
